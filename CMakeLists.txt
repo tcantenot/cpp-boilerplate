@@ -21,13 +21,14 @@ endif()
 # Put the project early since modules might need to detect the compiler
 project("CPP-BoilerPlate" C CXX)
 
+
 ############################
-##  Modules and scripts   ##
+##  Modules and scripts
 ############################
 
 # Standard CMake modules
 
-include(CTest) # Must be called before adding tests but after calling project(). This automatically calls enable_testing() and configures ctest targets when using Make/Ninja
+#include(CTest) # Must be called before adding tests but after calling project(). This automatically calls enable_testing() and configures ctest targets when using Make/Ninja
 include(CMakeDependentOption)# This is a really useful scripts that creates options that depends on other options. It can even be used with generator expressions !
 
 # Custom modules and scripts
@@ -38,14 +39,19 @@ include(Warnings)
 include(RunFixupBundle)
 include(Coverage)
 
+
 ###############
-##  OPTIONS  ##
+##  Options
 ###############
 
 # You should try to give as much control over the project setup to the user.
 # When modifying compile flags for example, if they are not mandatory, provide an option.
 
+# Doxygen
 option(BP_USE_DOXYGEN "Add a doxygen target to generate the documentation" ON)
+
+# Tests
+option(BUILD_TESTING "" ON)
 
 # Use your own option for tests, in case people use your library through add_subdirectory
 cmake_dependent_option(BP_BUILD_TESTS
@@ -53,20 +59,25 @@ cmake_dependent_option(BP_BUILD_TESTS
     "BUILD_TESTING" OFF # Stay coherent with CTest variables
 )
 
-# External dependencies
-add_subdirectory(external EXCLUDE_FROM_ALL)
+# Let the user add options to the test runner if needed
+set(TEST_RUNNER_PARAMS "--force-colors=true" CACHE STRING "Options to add to our test runners commands")
+
+
+# Global project setup
 
 # It is always easier to navigate in an IDE when projects are organized in folders.
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-###############
-##  Project  ##
-###############
-
-
-
 # Check for LTO support (needs to be after project(...) )
 find_lto(CXX)
+
+# We want at least c++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# External dependencies
+add_subdirectory(external EXCLUDE_FROM_ALL)
+
 
 #==========================#
 #  BoilerPlate executable  #
@@ -118,13 +129,17 @@ target_link_libraries(bp_foo
 # Give a 'scoped' name to libraries targets, as it can't be mistaken with system libraries
 add_library(bp::foo ALIAS bp_foo)
 
-#===========#
-#   Tests   #
-#===========#
+
+
+#############
+## Tests
+#############
+
 
 if(BP_BUILD_TESTS)
-    # Let the user add options to the test runner if needed
-    set(TEST_RUNNER_PARAMS "--force-colors=true" CACHE STRING "Options to add to our test runners commands")
+
+	enable_testing()
+
     # In a real project you most likely want to exclude test folders
     # list(APPEND CUSTOM_COVERAGE_EXCLUDE "/test/")
     add_subdirectory(tests)
@@ -137,8 +152,9 @@ if(BP_BUILD_TESTS)
     )
 endif()
 
+
 #############
-## Doxygen ##
+## Doxygen
 #############
 
 if(BP_USE_DOXYGEN AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
